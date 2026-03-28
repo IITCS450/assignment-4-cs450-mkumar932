@@ -79,6 +79,24 @@ trap(struct trapframe *tf)
     break;
 
   //PAGEBREAK: 13
+
+case T_PGFLT:
+{
+uint addr = rcr2();
+struct proc *p = myproc();
+if(p != 0 && (tf->cs & 3) == DPL_USER){
+cprintf("pid %d %s: page fault at va=0x%x eip=0x%x\n",
+p->pid, p->name, addr, tf->eip);
+if(addr < PGSIZE)
+cprintf("  NULL dereference detected\n");
+p->killed =1;
+break;
+}
+
+cprintf("kernel fault va=0x%x eip=0x%x\n", addr, tf->eip);
+panic("trap");
+}
+
   default:
     if(myproc() == 0 || (tf->cs&3) == 0){
       // In kernel, it must be our mistake.

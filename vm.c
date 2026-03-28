@@ -188,8 +188,11 @@ inituvm(pde_t *pgdir, char *init, uint sz)
     panic("inituvm: more than a page");
   mem = kalloc();
   memset(mem, 0, PGSIZE);
-  mappages(pgdir, 0, PGSIZE, V2P(mem), PTE_W|PTE_U);
+  mappages(pgdir, (void*)0x1000, PGSIZE, V2P(mem), PTE_W|PTE_U);
   memmove(mem, init, sz);
+char *stack = kalloc();
+memset(stack, 0, PGSIZE);
+mappages(pgdir, (void*)(2*PGSIZE), PGSIZE, V2P(stack), PTE_W|PTE_U);
 }
 
 // Load a program segment into pgdir.  addr must be page-aligned
@@ -324,9 +327,9 @@ copyuvm(pde_t *pgdir, uint sz)
     return 0;
   for(i = 0; i < sz; i += PGSIZE){
     if((pte = walkpgdir(pgdir, (void *) i, 0)) == 0)
-      panic("copyuvm: pte should exist");
+      continue;
     if(!(*pte & PTE_P))
-      panic("copyuvm: page not present");
+      continue;
     pa = PTE_ADDR(*pte);
     flags = PTE_FLAGS(*pte);
     if((mem = kalloc()) == 0)
